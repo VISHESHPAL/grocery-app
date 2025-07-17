@@ -55,7 +55,79 @@ export const placeOrderCOD = async (req, res) => {
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Place Order Stripe  /api/order/stripe
+export const placeOrderStripe = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { items, address } = req.body;
+    
+    if (!userId || !address || !items || items.length === 0) {
+      return res.json({
+        success: false,
+        message: "Invalid Data - userId, address, and items are required",
+      });
+    }
 
+    // Calculate the amount
+    let amount = await items.reduce(async (acc, item) => {
+      const product = await Product.findById(item.product);
+      if (!product) {
+        throw new Error(`Product not found: ${item.product}`);
+      }
+      return (await acc) + product.offerPrice * item.quantity;
+    }, 0);
+
+    // Add tax charge of 2%
+    amount += Math.floor(amount * 0.02);
+
+    // Create order first
+    const order = await Order.create({
+      userId,
+      items,
+      amount,
+      address,
+      paymentType: "Online",
+      isPaid: false,
+      paymentStatus: 'pending'
+    });
+
+    // Create Stripe checkout session
+    const session = await stripeInstance.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: items.map(item => ({
+        price_data: {
+          currency: 'inr',
+          product_data: {
+            name: item.name || 'Product',
+          },
+          unit_amount: Math.round(item.price * 100), // Convert to paisa
+        },
+        quantity: item.quantity,
+      })),
+      mode: 'payment',
+      success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+      metadata: {
+        orderId: order._id.toString(),
+        userId: userId.toString()
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: "Stripe payment session created",
+      session_url: session.url,
+      orderId: order._id
+    });
+
+  } catch (error) {
+    console.error('Stripe payment error:', error);
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 // setup stripe webhook 
 export const stripeWebhooks = async (req, res) => {  // ✅ Fixed: Added req, res parameters
     try {
