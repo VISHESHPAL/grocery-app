@@ -16,7 +16,7 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 // Allow multiple origins 
-const allowedOrigins = ['http://localhost:5173']
+const allowedOrigins = ['http://localhost:5173' ,'https://grocery-app-puce.vercel.app']
 
 // Connect to database and cloudinary
 await connectDB(); 
