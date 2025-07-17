@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "Backend/server.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "@vercel/node@3.2.0",
       "maxDuration": 30
     }
   },
