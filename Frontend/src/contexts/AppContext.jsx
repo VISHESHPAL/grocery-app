@@ -4,8 +4,13 @@ import { dummyProducts } from "../assets/assets";
 import { toast } from "react-toastify";
 import axios from "axios";
 
+const backendURL =
+  import.meta.env.MODE === "development"
+    ? import.meta.env.VITE_LOCAL_URL
+    : import.meta.env.VITE_LIVE_URL;
+
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+axios.defaults.baseURL = backendURL;
 
 export const AppContext = createContext();
 
